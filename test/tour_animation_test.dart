@@ -511,7 +511,7 @@ void main() {
       expect(progressOf(tester), 1);
       final card = find.byKey(const Key('story-arrival'));
       Finder inCard(Finder f) => find.descendant(of: card, matching: f);
-      expect(inCard(find.text('TOUR ABGESCHLOSSEN')), findsOneWidget);
+      expect(inCard(find.text('TOURÜBERSICHT')), findsOneWidget); // keine Aussage „abgeschlossen“
       expect(inCard(find.text('Lambach')), findsOneWidget);
       expect(inCard(find.text('Hamburg')), findsOneWidget);
       expect(inCard(find.text('178 km')), findsOneWidget);

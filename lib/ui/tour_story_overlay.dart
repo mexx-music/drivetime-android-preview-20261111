@@ -347,11 +347,23 @@ class TourStoryOverlay extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(28, 24, 28, 24),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text('TOUR ABGESCHLOSSEN',
-                style: theme.textTheme.labelLarge?.copyWith(
-                    letterSpacing: 2,
-                    fontWeight: FontWeight.w700,
-                    color: theme.colorScheme.primary)),
+            // Persönlicher Titel als Überschrift, sonst „TOURÜBERSICHT“ –
+            // keine Aussage über eine tatsächlich abgeschlossene Fahrt.
+            if (personalTitle != null)
+              Text(personalTitle!,
+                  key: const Key('arrival-personal-title'),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.headlineSmall
+                      ?.copyWith(fontWeight: FontWeight.w800, color: theme.colorScheme.primary))
+            else
+              Text('TOURÜBERSICHT',
+                  key: const Key('arrival-headline'),
+                  style: theme.textTheme.labelLarge?.copyWith(
+                      letterSpacing: 2,
+                      fontWeight: FontWeight.w700,
+                      color: theme.colorScheme.primary)),
             if (fromName != null || toName != null || s?.startIso != null) ...[
               const SizedBox(height: 12),
               Wrap(
@@ -382,14 +394,6 @@ class TourStoryOverlay extends StatelessWidget {
                   ],
                 ]),
               ),
-            ],
-            if (personalTitle != null) ...[
-              const SizedBox(height: 14),
-              Text(personalTitle!,
-                  key: const Key('arrival-personal-title'),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
             ],
           ]),
         ),

@@ -228,40 +228,65 @@ void main() {
       ));
     }
 
-    testWidgets('Titel genau einmal, über der unveränderten DriveTime-Signatur', (tester) async {
+    testWidgets('mit Titel: große Hauptüberschrift oben, Route darunter, nicht beim Branding wiederholt',
+        (tester) async {
       await _setSize(tester, const Size(540, 960));
       await pumpOutro(tester, data(title: 'Manfreds Tour'));
       expect(find.byKey(const Key('outro-personal-title')), findsOneWidget);
-      expect(find.text('Manfreds Tour'), findsOneWidget);
-      expect(find.byKey(const Key('outro-signature')), findsOneWidget);
-      expect(find.text('DriveTime'), findsOneWidget);
+      expect(find.text('Manfreds Tour'), findsOneWidget); // genau einmal
+      expect(find.text('Ancona → Wien'), findsOneWidget);
       final title = tester.getRect(find.byKey(const Key('outro-personal-title')));
+      final route = tester.getRect(find.byKey(const Key('outro-title-route')));
       final sig = tester.getRect(find.byKey(const Key('outro-signature')));
-      expect(title.bottom, lessThanOrEqualTo(sig.top)); // darüber
-      expect(title.right, closeTo(sig.right, 1)); // rechtsbündig mit der Signatur
+      expect(title.bottom, lessThanOrEqualTo(route.top)); // Route darunter
+      expect(title.top, lessThan(960 * 0.2)); // oben
+      expect(title.height, greaterThan(sig.height)); // Hauptüberschrift, nicht klein
+      // Branding unverändert und ohne Titel.
+      expect(find.text('DriveTime'), findsOneWidget);
+      expect(find.descendant(of: find.byKey(const Key('outro-signature')), matching: find.text('Manfreds Tour')),
+          findsNothing);
+      expect(sig.top, greaterThan(route.bottom));
+      // Keine „abgeschlossen“-Aussage, keine generische Überschrift.
+      expect(find.textContaining('ABGESCHLOSSEN'), findsNothing);
+      expect(find.textContaining('Angekommen'), findsNothing);
+      expect(find.text('TOURÜBERSICHT'), findsNothing);
       // Start, Ziel, Entfernung bleiben sichtbar.
       expect(find.byKey(const Key('outro-route')), findsOneWidget);
       expect(find.byKey(const Key('outro-km')), findsOneWidget);
-      // Keine eigene Formulierung zum Titel.
-      expect(find.textContaining('Manfreds Tour abgeschlossen'), findsNothing);
     });
 
-    testWidgets('ohne Titel: Outro wie bisher', (tester) async {
+    testWidgets('ohne Titel: „TOURÜBERSICHT“ mit Route, kein „TOUR ABGESCHLOSSEN“/„Angekommen in“', (tester) async {
       await _setSize(tester, const Size(540, 960));
       await pumpOutro(tester, data());
       expect(find.byKey(const Key('outro-personal-title')), findsNothing);
+      expect(find.text('TOURÜBERSICHT'), findsOneWidget);
+      expect(find.text('Ancona → Wien'), findsOneWidget);
+      expect(find.textContaining('ABGESCHLOSSEN'), findsNothing);
+      expect(find.textContaining('Angekommen'), findsNothing);
       expect(find.byKey(const Key('outro-signature')), findsOneWidget);
+    });
+
+    testWidgets('Eingabe wird nicht umformuliert („Marco“ bleibt „Marco“)', (tester) async {
+      await _setSize(tester, const Size(540, 960));
+      for (final t in ['Marco', 'Marcos Tour', 'unterwegs mit andi', 'Şoförün Turu']) {
+        await pumpOutro(tester, data(title: t));
+        expect(tester.widget<Text>(find.byKey(const Key('outro-personal-title'))).data, t);
+      }
     });
 
     testWidgets('kein Überlauf auf allen Größen – auch mit 40-Zeichen-Wort und Unicode', (tester) async {
       for (final size in _sizes) {
-        for (final title in [_longWord, 'Şoförün Turu · Călătoria lui Ion', 'Пътуване до София']) {
+        for (final title in [_longWord, 'Şoförün Turu · Călătoria lui Ion', 'Пътуване до София', 'Unterwegs mit Andi nach Ancona']) {
           await _setSize(tester, size);
           await pumpOutro(tester, data(title: title));
           expect(tester.takeException(), isNull, reason: '$size / $title');
           final r = tester.getRect(find.byKey(const Key('outro-personal-title')));
           expect(r.left, greaterThanOrEqualTo(0), reason: '$size');
           expect(r.right, lessThanOrEqualTo(size.width), reason: '$size');
+          // Zweizeiliger Titel samt Route überlappt die Länderliste nicht.
+          final block = tester.getRect(find.byKey(const Key('outro-title')));
+          final firstCountry = tester.getRect(find.byKey(const Key('outro-country-0')));
+          expect(block.bottom, lessThanOrEqualTo(firstCountry.top), reason: '$size / $title');
         }
       }
     });
@@ -274,9 +299,9 @@ void main() {
           eventProgress: 1,
         );
 
-    testWidgets('Titel genau einmal, kein Überlauf', (tester) async {
+    testWidgets('mit Titel: Titel als Überschrift über der Route, genau einmal, kein Überlauf', (tester) async {
       for (final size in _sizes) {
-        for (final title in ['Manfreds Tour', _longWord]) {
+        for (final title in ['Manfreds Tour', 'Marco', _longWord]) {
           await _setSize(tester, size);
           await tester.pumpWidget(MaterialApp(
             home: Scaffold(
@@ -285,12 +310,27 @@ void main() {
           ));
           expect(find.byKey(const Key('arrival-personal-title')), findsOneWidget);
           expect(find.text(title), findsOneWidget);
+          final head = tester.getRect(find.byKey(const Key('arrival-personal-title')));
+          expect(head.bottom, lessThanOrEqualTo(tester.getRect(find.text('Ancona')).top), reason: '$size');
+          expect(find.textContaining('ABGESCHLOSSEN'), findsNothing);
+          expect(find.text('TOURÜBERSICHT'), findsNothing);
           expect(tester.takeException(), isNull, reason: '$size / $title');
         }
       }
-      await tester.pumpWidget(MaterialApp(
-          home: Scaffold(body: TourStoryOverlay(frame: arrival(), fromName: 'Ancona', toName: 'Wien'))));
-      expect(find.byKey(const Key('arrival-personal-title')), findsNothing);
+    });
+
+    testWidgets('ohne Titel: „TOURÜBERSICHT“ über der Route, kein „TOUR ABGESCHLOSSEN“', (tester) async {
+      for (final size in _sizes) {
+        await _setSize(tester, size);
+        await tester.pumpWidget(MaterialApp(
+            home: Scaffold(body: TourStoryOverlay(frame: arrival(), fromName: 'Ancona', toName: 'Wien'))));
+        expect(find.byKey(const Key('arrival-personal-title')), findsNothing);
+        expect(find.text('TOURÜBERSICHT'), findsOneWidget);
+        expect(find.textContaining('ABGESCHLOSSEN'), findsNothing);
+        expect(find.text('Ancona'), findsOneWidget);
+        expect(find.text('Wien'), findsOneWidget);
+        expect(tester.takeException(), isNull, reason: '$size');
+      }
     });
   });
 

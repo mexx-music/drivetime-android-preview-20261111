@@ -154,7 +154,7 @@ class TourOutroOverlay extends StatelessWidget {
             width: portrait ? w - 2 * side : colW,
             child: _stats(unit),
           ),
-          Positioned(right: side, bottom: 0.025 * h, child: _signature(unit, maxWidth: w - 2 * side)),
+          Positioned(right: side, bottom: 0.025 * h, child: _signature(unit)),
         ]),
       );
     });
@@ -165,8 +165,16 @@ class TourOutroOverlay extends StatelessWidget {
         child: Transform.translate(offset: Offset(dx * (1 - v), dy * (1 - v)), child: child),
       );
 
+  /// Hauptüberschrift: persönlicher Titel (unverändert, wie eingegeben) oder
+  /// „TOURÜBERSICHT“; darunter die Route. Bewusst keine Formulierung wie
+  /// „abgeschlossen“ – DriveTime zeigt eine geplante Tour, keine bestätigte
+  /// Fahrt.
   Widget _title(double unit) {
     final v = timeline.title(t);
+    final personal = data.personalTitle;
+    final route = [data.from, data.to].where((s) => s.isNotEmpty).join(' → ');
+    final headline = TextStyle(
+        color: accent, fontSize: unit * 0.085, fontWeight: FontWeight.w900, height: 1.0, letterSpacing: -0.5);
     return _fade(
       v,
       dy: 10,
@@ -174,29 +182,23 @@ class TourOutroOverlay extends StatelessWidget {
         key: const Key('outro-title'),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('TOUR',
-                  style: TextStyle(color: accent, fontSize: unit * 0.085, fontWeight: FontWeight.w900, height: 0.95)),
-              Text('ABGESCHLOSSEN',
-                  style: TextStyle(
-                      color: _ink,
-                      fontSize: unit * 0.085,
-                      fontWeight: FontWeight.w900,
-                      height: 0.95,
-                      letterSpacing: -0.5)),
-            ]),
-          ),
-          SizedBox(height: unit * 0.02),
-          Text.rich(
-            TextSpan(children: [
-              const TextSpan(text: 'Angekommen in '),
-              TextSpan(text: data.to, style: const TextStyle(fontWeight: FontWeight.w800)),
-            ]),
-            style: TextStyle(color: _ink.withValues(alpha: 0.85), fontSize: unit * 0.04),
-          ),
+          if (personal != null)
+            Text(personal,
+                key: const Key('outro-personal-title'), maxLines: 2, overflow: TextOverflow.ellipsis, style: headline)
+          else
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text('TOURÜBERSICHT', key: const Key('outro-headline'), style: headline),
+            ),
+          if (route.isNotEmpty) ...[
+            SizedBox(height: unit * 0.02),
+            Text(route,
+                key: const Key('outro-title-route'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: _ink.withValues(alpha: 0.85), fontSize: unit * 0.04, fontWeight: FontWeight.w800)),
+          ],
         ],
       ),
     );
@@ -327,10 +329,12 @@ class TourOutroOverlay extends StatelessWidget {
     );
   }
 
-  Widget _signature(double unit, {required double maxWidth}) {
+  Widget _signature(double unit) {
     final v = timeline.logo(t);
     final s = unit * 0.034;
-    final signature = Row(key: const Key('outro-signature'), mainAxisSize: MainAxisSize.min, children: [
+    return _fade(
+      v,
+      Row(key: const Key('outro-signature'), mainAxisSize: MainAxisSize.min, children: [
         Text('Created with ', style: TextStyle(color: _ink.withValues(alpha: 0.6), fontSize: s * 0.8)),
         Container(
           width: s * 1.25,
@@ -342,26 +346,7 @@ class TourOutroOverlay extends StatelessWidget {
         ),
         SizedBox(width: s * 0.35),
         Text('DriveTime', style: TextStyle(color: _ink, fontSize: s, fontWeight: FontWeight.w800)),
-      ]);
-    final title = data.personalTitle;
-    return _fade(
-      v,
-      title == null
-          ? signature
-          // Persönlicher Titel: sekundär, eine Zeile, über dem Branding.
-          : ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: maxWidth),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
-                Text(title,
-                    key: const Key('outro-personal-title'),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.right,
-                    style: TextStyle(color: _ink.withValues(alpha: 0.82), fontSize: s, fontWeight: FontWeight.w600)),
-                SizedBox(height: s * 0.45),
-                signature,
-              ]),
-            ),
+      ]),
     );
   }
 }

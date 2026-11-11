@@ -134,7 +134,7 @@ class OutroTimeline {
   /// Abdunklung der Umgebung 0..1 (Ziel bleibt erkennbar).
   double dim(double t) => _ramp(t, overview + 0.8, overview + 3.2);
 
-  /// Titel „Tour abgeschlossen“ / Ankunftsort.
+  /// Titel (persönlicher Titel oder „Tourübersicht“) mit Route.
   double title(double t) => _ramp(t, heroReveal + 0.3, heroReveal + 1.2);
 
   /// Eintrag [i] der Länderliste 0..1.
