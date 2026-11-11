@@ -265,9 +265,13 @@ class TourStoryOverlay extends StatelessWidget {
     this.fromName,
     this.toName,
     this.countrySequence = const [],
+    this.personalTitle,
   });
 
   final TourFrame frame;
+
+  /// Persönlicher Titel des Fahrers für die Abschlusskarte (null = keiner).
+  final String? personalTitle;
 
   /// Länderfolge der Tour, für die Abschlussdarstellung.
   final List<String> countrySequence;
@@ -378,6 +382,14 @@ class TourStoryOverlay extends StatelessWidget {
                   ],
                 ]),
               ),
+            ],
+            if (personalTitle != null) ...[
+              const SizedBox(height: 14),
+              Text(personalTitle!,
+                  key: const Key('arrival-personal-title'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
             ],
           ]),
         ),

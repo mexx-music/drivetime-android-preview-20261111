@@ -36,6 +36,7 @@ class TourFilmSpec {
     this.truckBranding = 'neutral',
     this.timeZone,
     this.designVersion = kFilmDesignVersion,
+    this.personalTitle,
   });
 
   static const int schemaVersion = 1;
@@ -61,6 +62,11 @@ class TourFilmSpec {
 
   final String designVersion;
 
+  /// Persönlicher Titel des Fahrers (optional, bereinigt, nur lokal
+  /// gespeichert). Dezent im Intro und Outro; ohne Titel bleibt der Film –
+  /// samt Kennung und JSON – wie bisher.
+  final String? personalTitle;
+
   TourFilmSpec copyWith({FilmFormat? format}) => TourFilmSpec(
         plan: plan,
         eta: eta,
@@ -71,6 +77,7 @@ class TourFilmSpec {
         truckBranding: truckBranding,
         timeZone: timeZone,
         designVersion: designVersion,
+        personalTitle: personalTitle,
       );
 
   // ------------------------------------------------------------ Kennung
@@ -100,6 +107,8 @@ class TourFilmSpec {
       'to': toName,
       'eta': _etaJson(eta),
       'tz': timeZone,
+      // Nur mit Titel: bestehende Kennungen ohne Titel bleiben unverändert.
+      if (personalTitle != null) 'personalTitle': personalTitle,
     };
   }
 
@@ -115,6 +124,7 @@ class TourFilmSpec {
         'format': format.name,
         'truckBranding': truckBranding,
         'timeZone': timeZone,
+        if (personalTitle != null) 'personalTitle': personalTitle,
         'plan': {
           'start': _pt(plan.start!),
           'dest': _pt(plan.dest!),
@@ -159,6 +169,8 @@ class TourFilmSpec {
       truckBranding: j['truckBranding'] as String? ?? 'neutral',
       timeZone: j['timeZone'] as String?,
       designVersion: j['design'] as String? ?? kFilmDesignVersion,
+      // Ältere Spezifikationen ohne Feld: kein Titel.
+      personalTitle: j['personalTitle'] as String?,
     );
     final expected = j['filmId'];
     if (expected != null && expected != spec.filmId) {

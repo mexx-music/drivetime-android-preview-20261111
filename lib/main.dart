@@ -1,7 +1,8 @@
 // lib/main.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show Clipboard, ClipboardData;
+import 'package:flutter/services.dart'
+    show Clipboard, ClipboardData, FilteringTextInputFormatter, LengthLimitingTextInputFormatter;
 import 'package:flutter/foundation.dart';
 import 'services/maps_proxy.dart';
 import 'services/catlab_trace.dart';
@@ -30,6 +31,7 @@ import 'utils/polyline.dart' as poly_utils;
 import 'models/route_preset.dart';
 import 'services/route_preset_store.dart';
 import 'services/truck_color_store.dart';
+import 'services/personal_title_store.dart';
 import 'widgets/route_preset_selector.dart';
 import 'package:driverroute_eta/secrets.dart';
 import 'widgets/places_autocomplete.dart' as places_auto;
@@ -334,6 +336,26 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Gewählte Truckfarbe (lokal gespeichert; Standard Blau).
   TruckColor _truckColor = TruckColor.blue;
 
+  /// Persönlicher Titel im Tourvideo (lokal gespeichert; Standard leer).
+  final TextEditingController _personalTitleCtl = TextEditingController();
+
+  Future<void> _loadPersonalTitle() async {
+    final t = await PersonalTitleStore.load();
+    if (mounted && t != null && _personalTitleCtl.text.isEmpty) {
+      setState(() => _personalTitleCtl.text = t);
+    }
+  }
+
+  void _personalTitleChanged(String value) {
+    setState(() {}); // Löschsymbol ein-/ausblenden
+    PersonalTitleStore.save(value);
+  }
+
+  void _clearPersonalTitle() {
+    setState(_personalTitleCtl.clear);
+    PersonalTitleStore.save(null);
+  }
+
   Future<void> _loadTruckColor() async {
     final c = await TruckColorStore.load();
     if (mounted) setState(() => _truckColor = c);
@@ -360,6 +382,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadFerries();
     _loadPresets();
     _loadTruckColor();
+    _loadPersonalTitle();
     _checkInterruptedTour();
     // Adresseingabe angemeldet: Token und Tagesbudget; sonst öffentlich.
     if (widget.auth.enabled) {
@@ -507,6 +530,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _startCtl.dispose();
     _destCtl.dispose();
     _kmCtl.dispose();
+    _personalTitleCtl.dispose();
     _stopCtl.dispose();
     _ferrySearchCtl.dispose();
     super.dispose();
@@ -2196,6 +2220,8 @@ class _HomeScreenState extends State<HomeScreen> {
       toName: to.isEmpty ? null : to,
       // Gewählte Truckfarbe; der Film-Build behält die GARTNER-Lackierung.
       truckBranding: filmTruckBrandingId(filmBuild: _filmBuild, color: _truckColor),
+      // Beim Öffnen des Films festgelegt; bleibt auf dem Gerät.
+      personalTitle: sanitizePersonalTitle(_personalTitleCtl.text),
       timeZone: browserTimeZone(),
     );
   }
@@ -3105,6 +3131,34 @@ class _HomeScreenState extends State<HomeScreen> {
                   // stellt Fährabschnitte jetzt gesondert dar. Erst nach einer
                   // Berechnung: vorher gibt es keine Route, die sie zeigen könnte.
                   onPressed: _etaResult == null ? null : _openMapOsm,
+                ),
+              ),
+              // Persönlicher Titel für Intro und Outro (optional, nur lokal).
+              Padding(
+                padding: pad,
+                child: TextField(
+                  key: const Key('personal-title'),
+                  controller: _personalTitleCtl,
+                  maxLines: 1,
+                  textInputAction: TextInputAction.done,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.deny(RegExp(r'[\r\n\t]')),
+                    LengthLimitingTextInputFormatter(kPersonalTitleMaxLength),
+                  ],
+                  onChanged: _personalTitleChanged,
+                  decoration: InputDecoration(
+                    labelText: 'Titel im Tourvideo (optional)',
+                    helperText: 'Zum Beispiel „Manfreds Tour“. Bleibt auf diesem Gerät.',
+                    border: const OutlineInputBorder(),
+                    suffixIcon: _personalTitleCtl.text.isEmpty
+                        ? null
+                        : IconButton(
+                            key: const Key('personal-title-clear'),
+                            tooltip: 'Titel entfernen',
+                            icon: const Icon(Icons.close),
+                            onPressed: _clearPersonalTitle,
+                          ),
+                  ),
                 ),
               ),
               // Truckfarbe für Animation, Live-Aufnahme und Studio-Export

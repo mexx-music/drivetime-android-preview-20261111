@@ -30,6 +30,7 @@ class OutroData {
     required this.countries,
     this.days,
     this.ferries = 0,
+    this.personalTitle,
   });
 
   final String from;
@@ -44,6 +45,9 @@ class OutroData {
 
   /// Fährüberfahrten der Tour (Fährabschnitte der Linie).
   final int ferries;
+
+  /// Persönlicher Titel des Fahrers (dezent über der Signatur); null = keiner.
+  final String? personalTitle;
 
   /// Anzahl verschiedener Länder (für „8 LÄNDER“).
   int get distinctCountries => countries.map((c) => c.iso).toSet().length;

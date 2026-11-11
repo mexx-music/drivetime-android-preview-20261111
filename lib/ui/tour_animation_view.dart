@@ -68,7 +68,12 @@ class TourAnimationView extends StatefulWidget {
     this.onPlaybackStarted,
     this.onPlaybackFinished,
     this.closeRequest,
+    this.personalTitle,
   });
+
+  /// Persönlicher Titel des Fahrers (bereinigt) – dezent im Intro unter der
+  /// Fahrleiste und im Outro über der Signatur. null = Film wie bisher.
+  final String? personalTitle;
 
   /// Sauberer Aufnahmemodus für die Live-Aufnahme im Browser: dieselbe
   /// Filmregie in Echtzeit (1×), aber ohne jedes Bedienelement – keine
@@ -318,6 +323,16 @@ class _TourAnimationViewState extends State<TourAnimationView>
     unawaited(Future<void>.sync(call).catchError((Object _) {}));
   }
 
+  /// Intro: persönlicher Titel in den ersten Sekunden der Fahrt – nach der
+  /// Filmzeit, damit Vorschau, Live-Aufnahme und Bild-für-Bild-Export
+  /// dasselbe zeigen. Einblenden 0,6 s, stehen bis 4,4 s, ausblenden bis 5,4 s.
+  double get _introOpacity {
+    final t = _playback.elapsed.inMicroseconds / 1e6;
+    if (t < 0.6) return (t / 0.6).clamp(0.0, 1.0);
+    if (t < 4.4) return 1;
+    return (1 - (t - 4.4) / 1.0).clamp(0.0, 1.0);
+  }
+
   /// Rückkehr in den Tab/die App: der Browser hat die Sperre beim Verdecken
   /// selbst freigegeben – erneut anfordern, solange die Fahrt noch läuft.
   void _wakeAgain() {
@@ -447,6 +462,7 @@ class _TourAnimationViewState extends State<TourAnimationView>
       planKm: _planKm,
       fromName: widget.fromName,
       toName: widget.toName,
+      personalTitle: widget.personalTitle,
     );
     // Cinematic: erst die ganze Reise im Überblick, dann der Hero-Truck.
     _outroTimeline = OutroTimeline(countryCount: outro.countries.length, overview: _cinematic != null ? 4.4 : 0);
@@ -621,8 +637,24 @@ class _TourAnimationViewState extends State<TourAnimationView>
               toName: widget.toName,
               storyEvents: _timeline.events,
               vehicleColor: widget.truckModel.branding.cab,
+              personalTitle: widget.personalTitle,
             ),
           ),
+          if (widget.personalTitle != null && _introOpacity > 0)
+            Positioned(
+              left: 24,
+              right: 24,
+              // Unter der Fahrleiste (dieselbe Lage wie im Szenenbild).
+              top: (widget.videoExport ? MediaQuery.sizeOf(context).height * 0.065 : 12) + 80,
+              child: IgnorePointer(
+                child: Center(
+                  child: Opacity(
+                    opacity: _introOpacity,
+                    child: _IntroTitle(widget.personalTitle!),
+                  ),
+                ),
+              ),
+            ),
           if (_preparing)
             const Positioned.fill(
               child: ColoredBox(
@@ -737,10 +769,14 @@ class TourAnimationScene extends StatefulWidget {
     this.toName,
     this.storyEvents = const [],
     this.vehicleColor = const Color(0xFF0D47A1),
+    this.personalTitle,
   });
 
   /// Farbe des Fahrzeugsymbols (Kabinenfarbe des gewählten Brandings).
   final Color vehicleColor;
+
+  /// Persönlicher Titel für die Abschlusskarte (null = keiner).
+  final String? personalTitle;
 
   /// Alle Story-Ereignisse (für Länderfortschritt und Fahrtag in der Leiste).
   final List<TourStoryEvent> storyEvents;
@@ -961,6 +997,7 @@ class _TourAnimationSceneState extends State<TourAnimationScene> {
               fromName: widget.fromName,
               toName: widget.toName,
               countrySequence: storyCountrySequence(widget.storyEvents, startIso),
+              personalTitle: widget.personalTitle,
             ),
           ),
         Positioned(
@@ -1097,6 +1134,38 @@ class _ZoomControls extends StatelessWidget {
                     ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Persönlicher Titel im Intro: klein, eine Zeile, in der Art der Fahrleiste.
+class _IntroTitle extends StatelessWidget {
+  const _IntroTitle(this.title);
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 420),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: const [BoxShadow(blurRadius: 6, color: Color(0x22000000))],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          child: Text(
+            title,
+            key: const Key('intro-personal-title'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+          ),
         ),
       ),
     );

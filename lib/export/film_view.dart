@@ -68,4 +68,6 @@ Widget filmViewFor(
       onPlaybackStarted: onPlaybackStarted,
       onPlaybackFinished: onPlaybackFinished,
       closeRequest: closeRequest,
+      // Persönlicher Titel aus der Filmspezifikation – überall derselbe.
+      personalTitle: spec.personalTitle,
     );

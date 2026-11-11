@@ -15,6 +15,7 @@ import 'package:driverroute_eta/models/tour_draft.dart';
 import 'package:driverroute_eta/services/cinematic_session.dart';
 import 'package:driverroute_eta/services/maps_proxy.dart';
 import 'package:driverroute_eta/services/truck_color_store.dart';
+import 'package:driverroute_eta/services/personal_title_store.dart';
 import 'package:driverroute_eta/tour/tour_scope.dart';
 import 'package:driverroute_eta/ui/map_osm_view.dart';
 import 'package:driverroute_eta/ui/tour_animation_scene_maplibre.dart';
@@ -1077,6 +1078,83 @@ void main() {
       await tester.pumpWidget(const DriverRouteApp());
       await tester.pumpAndSettle();
       expect(selected(), TruckColor.green);
+    });
+
+    testWidgets('Persönlicher Titel: Animation und Live-Aufnahme gleich, nicht im Dateinamen, gespeichert, entfernbar',
+        (tester) async {
+      final api = FakeTabCaptureApi();
+      debugTabCaptureApiOverride = api;
+      addTearDown(() => debugTabCaptureApiOverride = null);
+      final cacheDir = Directory.systemTemp.createTempSync('drivetime_tiles_');
+      addTearDown(() => cacheDir.deleteSync(recursive: true));
+      const pathProvider = MethodChannel('plugins.flutter.io/path_provider');
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(pathProvider, (_) async => cacheDir.path);
+      addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(pathProvider, null));
+      await pumpApp(tester);
+
+      final field = find.byKey(const Key('personal-title'));
+      TextField input() => tester.widget<TextField>(field);
+      expect(input().controller!.text, isEmpty); // Standard leer
+      expect(find.text('Titel im Tourvideo (optional)'), findsOneWidget);
+      expect(find.text('Zum Beispiel „Manfreds Tour“. Bleibt auf diesem Gerät.'), findsOneWidget);
+      expect(find.byKey(const Key('personal-title-clear')), findsNothing);
+
+      await tester.ensureVisible(field);
+      await tester.enterText(field, '  Manfreds Tour  ');
+      await tester.pump();
+      expect(find.byKey(const Key('personal-title-clear')), findsOneWidget);
+      await calculate(tester);
+      final afterCalc = proxy.requests.length;
+
+      // „Tour animieren“: bereinigter Titel.
+      await tester.ensureVisible(animateButton);
+      await tester.tap(animateButton);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(tester.widget<TourAnimationView>(find.byType(TourAnimationView)).personalTitle, 'Manfreds Tour');
+      await tester.tap(find.byTooltip('Schließen'));
+      await tester.pumpAndSettle();
+
+      // Live-Aufnahme: derselbe Titel; Dateiname ohne Titel.
+      final start = find.byKey(const Key('live-recording-start'));
+      await tester.ensureVisible(start);
+      await tester.tap(start);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('live-recording-confirm')));
+      await tester.pump();
+      api.grant();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+      final live = tester.widget<TourAnimationView>(find.byType(TourAnimationView));
+      expect(live.cleanRecording, isTrue);
+      expect(live.personalTitle, 'Manfreds Tour');
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+      for (var i = 0; i < 120 && find.byType(TourAnimationView).evaluate().isNotEmpty; i++) {
+        await tester.pump(const Duration(seconds: 1));
+      }
+      await tester.pumpAndSettle();
+      final download = find.byKey(const Key('live-recording-download'));
+      await tester.ensureVisible(download);
+      await tester.tap(download);
+      final fileName = api.videos.single.downloads.single;
+      expect(fileName, startsWith('drivetime_lambach-hamburg_'));
+      expect(fileName.toLowerCase(), isNot(contains('manfred')));
+      expect(proxy.requests.length, afterCalc); // Titel ohne Server-/Provider-Aufruf
+
+      // Neustart: Titel wiederhergestellt.
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(const DriverRouteApp());
+      await tester.pumpAndSettle();
+      expect(input().controller!.text, 'Manfreds Tour');
+
+      // „Titel entfernen“: Feld leer, Speicher leer.
+      await tester.ensureVisible(find.byKey(const Key('personal-title-clear')));
+      await tester.tap(find.byKey(const Key('personal-title-clear')));
+      await tester.pumpAndSettle();
+      expect(input().controller!.text, isEmpty);
+      expect(await PersonalTitleStore.load(), isNull);
     });
 
     testWidgets('ohne Streckenführung (manuelle km): Hinweis statt Animation, kein Aufruf',

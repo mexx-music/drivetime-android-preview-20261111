@@ -20,6 +20,7 @@ OutroData buildOutroData({
   double? planKm,
   String? fromName,
   String? toName,
+  String? personalTitle,
 }) {
   final startIso = summary?.startIso ?? countries?.countryAt(path.start);
   final sequence = storyCountrySequence(events, startIso);
@@ -30,6 +31,7 @@ OutroData buildOutroData({
     days: summary?.days,
     countries: [for (final iso in sequence) OutroCountry(iso, countries?.byIso(iso)?.name ?? iso)],
     ferries: ferryCount(path),
+    personalTitle: personalTitle,
   );
 }
 
@@ -152,7 +154,7 @@ class TourOutroOverlay extends StatelessWidget {
             width: portrait ? w - 2 * side : colW,
             child: _stats(unit),
           ),
-          Positioned(right: side, bottom: 0.025 * h, child: _signature(unit)),
+          Positioned(right: side, bottom: 0.025 * h, child: _signature(unit, maxWidth: w - 2 * side)),
         ]),
       );
     });
@@ -325,12 +327,10 @@ class TourOutroOverlay extends StatelessWidget {
     );
   }
 
-  Widget _signature(double unit) {
+  Widget _signature(double unit, {required double maxWidth}) {
     final v = timeline.logo(t);
     final s = unit * 0.034;
-    return _fade(
-      v,
-      Row(key: const Key('outro-signature'), mainAxisSize: MainAxisSize.min, children: [
+    final signature = Row(key: const Key('outro-signature'), mainAxisSize: MainAxisSize.min, children: [
         Text('Created with ', style: TextStyle(color: _ink.withValues(alpha: 0.6), fontSize: s * 0.8)),
         Container(
           width: s * 1.25,
@@ -342,7 +342,26 @@ class TourOutroOverlay extends StatelessWidget {
         ),
         SizedBox(width: s * 0.35),
         Text('DriveTime', style: TextStyle(color: _ink, fontSize: s, fontWeight: FontWeight.w800)),
-      ]),
+      ]);
+    final title = data.personalTitle;
+    return _fade(
+      v,
+      title == null
+          ? signature
+          // Persönlicher Titel: sekundär, eine Zeile, über dem Branding.
+          : ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
+                Text(title,
+                    key: const Key('outro-personal-title'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    style: TextStyle(color: _ink.withValues(alpha: 0.82), fontSize: s, fontWeight: FontWeight.w600)),
+                SizedBox(height: s * 0.45),
+                signature,
+              ]),
+            ),
     );
   }
 }
