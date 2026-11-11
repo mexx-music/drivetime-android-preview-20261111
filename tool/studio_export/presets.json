@@ -1,0 +1,26 @@
+{
+  "_comment": "Exportprofile von DriveTime Studio. Einzige Quelle der Zahlen für den lokalen Exportdienst (server.mjs); lib/export/video_export_preset.dart muss übereinstimmen (test/video_export_test.dart prüft das). Beide Profile rendern denselben CSS-Bildausschnitt und dieselbe Filmzeitleiste – nur Pixeldichte, aufgenommene Bildrate, Kompression und Wasserzeichen unterscheiden sich.",
+  "timelineFps": 30,
+  "viewport": {
+    "landscape16x9": { "width": 960, "height": 540 },
+    "portrait9x16": { "width": 540, "height": 960 }
+  },
+  "presets": {
+    "controlPreview": {
+      "deviceScaleFactor": 0.6666666666666666,
+      "fps": 10,
+      "crf": 34,
+      "x264Preset": "veryfast",
+      "audioKbps": 64,
+      "watermark": "DRIVETIME PREVIEW"
+    },
+    "fullHD": {
+      "deviceScaleFactor": 2,
+      "fps": 30,
+      "crf": 16,
+      "x264Preset": "slow",
+      "audioKbps": 256,
+      "watermark": null
+    }
+  }
+}

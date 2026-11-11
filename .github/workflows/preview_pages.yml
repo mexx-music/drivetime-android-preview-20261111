@@ -1,0 +1,60 @@
+# Temporäre Android-Vorschau – nur manuell auslösbar, kein Deployment bei Push.
+# Ohne Login/Supabase; nutzt den bestehenden öffentlichen DriveTime-Proxy.
+name: Android-Vorschau (manuell)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: preview-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.35.7
+
+      - run: flutter pub get
+
+      - name: Build Flutter web (Vorschau, ohne Login/Supabase)
+        run: >-
+          flutter build web --release
+          --base-href "/drivetime-android-preview-20261111/"
+          --dart-define=MAPS_PROXY_BASE=https://drive-time-arrival-proxy.onrender.com
+
+      - name: Bundle auf Geheimnisse prüfen
+        run: |
+          if grep -rIlE 'AIza[0-9A-Za-z_-]{30}|sb_secret_[A-Za-z0-9_-]{8}|service_role|SUPABASE_SERVICE_ROLE|postgres(ql)?://' build/web; then
+            echo "Geheimnis-Muster im Build gefunden – kein Deployment."; exit 1
+          fi
+          if grep -rIl 'supabase\.co' build/web; then
+            echo "Supabase-Adresse im Build gefunden – kein Deployment."; exit 1
+          fi
+          echo "OK: keine Schlüssel, keine Supabase-Adresse"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

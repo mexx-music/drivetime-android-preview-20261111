@@ -1,0 +1,35 @@
+{
+    "name": "DriverRoute ETA",
+    "short_name": "DriverRoute",
+    "start_url": "./",
+    "display": "standalone",
+    "background_color": "#102A43",
+    "theme_color": "#102A43",
+    "description": "LKW-Routen-, Pausen- und Ankunftsplanung",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "icons": [
+        {
+            "src": "icons/driverroute-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/driverroute-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/driverroute-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/driverroute-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}

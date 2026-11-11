@@ -1,0 +1,2 @@
+// Copy to GoogleMaps.xcconfig and insert an iOS-restricted key.
+GOOGLE_MAPS_API_KEY=YOUR_RESTRICTED_IOS_KEY

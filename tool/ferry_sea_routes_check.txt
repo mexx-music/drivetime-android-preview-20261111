@@ -1,0 +1,20 @@
+Prüfung tool/check_ferry_sea_routes.mjs gegen OpenFreeMap-Wasserflächen (Zoom 12, Hafenzufahrten Zoom 14), Stand 2026-10-02:
+Igoumenitsa – Bari: 1414 Punkte, 352 km, Land: 0
+Igoumenitsa – Brindisi: 979 Punkte, 243 km, Land: 0
+Igoumenitsa – Ancona: 2978 Punkte, 740 km, Land: 0
+Igoumenitsa – Venedig: 3787 Punkte, 941 km, Land: 0
+Patras – Bari: 2485 Punkte, 619 km, Land: 0
+Patras – Brindisi: 2050 Punkte, 510 km, Land: 0
+Patras – Ancona: 4049 Punkte, 1007 km, Land: 0
+Patras – Venedig: 4858 Punkte, 1208 km, Land: 0
+Travemünde – Trelleborg: 911 Punkte, 226 km, Land: 0
+Kiel – Trelleborg: 1077 Punkte, 267 km, Land: 0
+Travemünde – Malmö: 1028 Punkte, 255 km, Land: 0
+Rostock – Trelleborg: 647 Punkte, 160 km, Land: 0
+Świnoujście – Trelleborg: 727 Punkte, 180 km, Land: 0
+Kiel – Göteborg: 1704 Punkte, 422 km, Land: 0
+Kiel – Oslo: 2686 Punkte, 666 km, Land: 0
+Grenaa – Halmstad: 491 Punkte, 122 km, Land: 0
+Hirtshals – Kristiansand: 559 Punkte, 139 km, Land: 0
+Hirtshals – Stavanger: 1538 Punkte, 382 km, Land: 0
+Hirtshals – Bergen: 2481 Punkte, 615 km, Land: 0
